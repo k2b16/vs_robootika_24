@@ -19,7 +19,8 @@ def main_loop():
     frame = 0
     frame_cnt = 0
     center_x = cam.rgb_width // 2
-    buffer = 20
+    buffer = 28
+    searching_for_ball = True
     try:
         #time.sleep(2)
         
@@ -36,14 +37,25 @@ def main_loop():
 
             if processedData.balls:
                 ball = processedData.balls[0]
+
                 if ball.exists:
+                    searching_for_ball = False 
+
+                    # Center the camera on the ball
                     if not (center_x - buffer <= ball.x <= center_x + buffer):
-                        if ball.x < center_x - buffer:
-                            robot_motion.move(0, 0, 0, 50)
-                        elif ball.x > center_x + buffer:
-                            robot_motion.move(0, 0, 0, -50)
+                        if ball.x < center_x - buffer:  # Ball is left of center
+                            robot_motion.move(0, 0, 0, 50)  # Rotate right
+                        elif ball.x > center_x + buffer:  # Ball is right of center
+                            robot_motion.move(0, 0, 0, -50)  # Rotate left
                     else:
                         robot_motion.move(0, 0, 0, 0)
+                else:
+                    searching_for_ball = True
+            else:
+                searching_for_ball = True
+            if searching_for_ball:
+                print("Searching...")
+                robot_motion.move(0, 0, 0, 10)
 
             frame += 1
             if frame % 30 == 0:
