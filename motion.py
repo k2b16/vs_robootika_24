@@ -29,7 +29,7 @@ class PrintingMotion(IRobotMotion):
 class OmniMotionRobot(IRobotMotion):
     def __init__(self, port="/dev/ttyACM0"):
         self.port = port
-        self.serial_connection = None
+        self.serial_connection = ""
 
     def open(self):
         """Opens the serial port connection."""
@@ -85,7 +85,7 @@ class OmniMotionRobot(IRobotMotion):
         """Command to rotate in place."""
         speed1 = 0 #Back wheel
         speed2 = rot_speed #Right wing
-        speed3 = -rot_speed #Left wing
+        speed3 = rot_speed #Left wing
         
         thrower_speed = 0 #48
         servo1 = 0 #1500

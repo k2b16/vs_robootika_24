@@ -18,8 +18,9 @@ def main_loop():
     fps = 0
     frame = 0
     frame_cnt = 0
+    center_x = cam.rgb_width // 2
+    buffer = 20
     try:
-        
         #time.sleep(2)
         
         #robot_motion.move(0, 0, 0, -100)
@@ -28,10 +29,21 @@ def main_loop():
         #robot_motion.move(0, 0, 0, 0)
 
         while True:
-            robot_motion.move(0, 0, 0, 100)
+            #robot_motion.move(0, 0, 0, 100)
             processedData = processor.process_frame(aligned_depth=False)
 
             frame_cnt +=1
+
+            if processedData.balls:
+                ball = processedData.balls[0]
+                if ball.exists:
+                    if not (center_x - buffer <= ball.x <= center_x + buffer):
+                        if ball.x < center_x - buffer:
+                            robot_motion.move(0, 0, 0, 50)
+                        elif ball.x > center_x + buffer:
+                            robot_motion.move(0, 0, 0, -50)
+                    else:
+                        robot_motion.move(0, 0, 0, 0)
 
             frame += 1
             if frame % 30 == 0:

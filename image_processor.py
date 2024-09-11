@@ -1,6 +1,6 @@
 import camera
 import segment
-import _pickle as pickle
+import pickle
 import numpy as np
 import cv2
 import Color as c
