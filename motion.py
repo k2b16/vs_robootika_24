@@ -1,5 +1,6 @@
 from statistics import mean 
 import serial
+import math
 import struct
 
 class IRobotMotion:
@@ -21,15 +22,19 @@ class PrintingMotion(IRobotMotion):
     def close(self):
         print("Shutting down...")
 
-    # simple logic to print what the mainboard would recieve
+
     def move(self, ratas1, ratas2, rot_speed):
         direction = "left" if rot_speed * self.polarity > 0 else "right"
         print(f"Rotation direction: {direction};")
 
 class OmniMotionRobot(IRobotMotion):
-    def __init__(self, port="/dev/ttyACM0"):
+    def __init__(self, port="/dev/ttyACM0", wheel_distance_from_center=0.2):
         self.port = port
         self.serial_connection = ""
+        self.wheel_distance_from_center = wheel_distance_from_center
+
+        self.wheel_angles = [0, 120, 240]
+
 
     def open(self):
         """Opens the serial port connection."""
@@ -61,13 +66,30 @@ class OmniMotionRobot(IRobotMotion):
         except Exception as e:
             print(f"Failed to send command: {e}")
 
+    def calculate_wheel_velocities(self, robotSpeedX, robotSpeedY, robotAngularVelocity):
+        """Calculates the linear velocity for each wheel based on robot movement."""
+        robotSpeed = math.sqrt(robotSpeedX**2 + robotSpeedY**2)
+        robotDirectionAngle = math.atan2(robotSpeedY, robotSpeedX)  # in radians
+
+        wheel_velocities = []
+        for wheel_angle_deg in self.wheel_angles:
+            wheel_angle = math.radians(wheel_angle_deg)
+            
+            wheelLinearVelocity = (
+                robotSpeed * math.cos(robotDirectionAngle - wheel_angle) + 
+                self.wheel_distance_from_center * robotAngularVelocity
+            )
+            wheel_velocities.append(wheelLinearVelocity)
+
+        return wheel_velocities
+
+
     def receive_feedback(self):
         """Receives feedback data from the robot's mainboard and unpacks it."""
         try:
             if self.serial_connection.in_waiting > 0:
                 # Reading the expected size of the feedback struct (13 bytes: 6 int16, 1 uint8, 1 uint16)
                 feedback_data = self.serial_connection.read(13)
-                # Unpack the received data according to the firmware struct format
                 actual_speed1, actual_speed2, actual_speed3, motor1_position, motor2_position, motor3_position, sensors, feedback_delimiter = struct.unpack(
                     '<hhhhhhBH', feedback_data
                 )
@@ -81,18 +103,22 @@ class OmniMotionRobot(IRobotMotion):
             print(f"Failed to receive feedback: {e}")
         return None
 
-    def move(self, ratas1, ratas2, ratas3, rot_speed):
+    def move(self, robotSpeedX, robotSpeedY, robotAngularVelocity):
         """Command to rotate in place."""
-        speed1 = 0 #Back wheel
-        speed2 = rot_speed #Right wing
-        speed3 = rot_speed #Left wing
+        wheel_velocities = self.calculate_wheel_velocities(robotSpeedX, robotSpeedY, robotAngularVelocity)
+
+        speed1, speed2, speed3 = wheel_velocities
+
         
-        thrower_speed = 0 #48
+        """speed1 = 0 #Back wheel
+        speed2 = 0  #Right wing
+        speed3 = 0 #Left wing"""
+        thrower = 250
         servo1 = 0 #1500
         servo2 = 0 #1500
-        disable_failsafe = 0 
+        disable_failsafe = 0
 
-        self.send_command(speed1, speed2, speed3, thrower_speed, servo1, servo2, disable_failsafe)
+        self.send_command(int(speed1), int(speed2), int(speed3), thrower, servo1, servo2, disable_failsafe)
 
         #feedback = self.receive_feedback()
         #if feedback:
