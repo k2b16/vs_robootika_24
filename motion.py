@@ -113,7 +113,7 @@ class OmniMotionRobot(IRobotMotion):
         """speed1 = 0 #Back wheel
         speed2 = 0  #Right wing
         speed3 = 0 #Left wing"""
-        thrower = 250
+        thrower = 1000
         servo1 = 0 #1500
         servo2 = 0 #1500
         disable_failsafe = 0
